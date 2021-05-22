@@ -3,6 +3,8 @@ import 'package:login_api/profile.dart';
 import 'package:login_api/signup_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'login_page.dart';
+
 class SplashScreen extends StatefulWidget {
   SplashScreen({Key key}) : super(key: key);
 
@@ -28,7 +30,7 @@ class _SplashScreenState extends State<SplashScreen> {
     if (prefs.getString("TOKEN") != null && prefs.getString("TOKEN") != "") {
       Navigator.push(context, MaterialPageRoute(builder: (_) => Profile()));
     } else {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => SignUpPage()));
+      Navigator.push(context, MaterialPageRoute(builder: (_) => LoginPage()));
     }
   }
 }

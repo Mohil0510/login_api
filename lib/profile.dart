@@ -1,5 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:http/http.dart';
 import 'package:login_api/edit_profile.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'config.dart';
+import 'login_page.dart';
 
 class Profile extends StatefulWidget {
   @override
@@ -7,6 +15,16 @@ class Profile extends StatefulWidget {
 }
 
 class _ProfileState extends State<Profile> {
+  String _name = "";
+  String _email = "";
+  String _urlImage = "https://i.imgur.com/pXNW6nZ.jpg";
+
+  @override
+  void initState() {
+    super.initState();
+    getUserDetails();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,9 +72,11 @@ class _ProfileState extends State<Profile> {
                   width: 120,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: Colors.grey,
-                    shape: BoxShape.circle,
-                  ),
+                      color: Colors.grey,
+                      shape: BoxShape.circle,
+                      image: DecorationImage(
+                          fit: BoxFit.cover,
+                          image: NetworkImage("$_urlImage"))),
                 ),
               ),
               Container(
@@ -89,7 +109,7 @@ class _ProfileState extends State<Profile> {
                         ),
                       ),
                       Text(
-                        'Name',
+                        '$_name',
                         style: TextStyle(
                           fontSize: 13,
                           color: Colors.black,
@@ -132,7 +152,7 @@ class _ProfileState extends State<Profile> {
                         ),
                       ),
                       Text(
-                        'Email Address',
+                        '$_email',
                         style: TextStyle(
                           fontSize: 13,
                           color: Colors.black,
@@ -175,10 +195,67 @@ class _ProfileState extends State<Profile> {
                   ),
                 ),
               ),
+              SizedBox(height: 10),
+              GestureDetector(
+                onTap: () => logOut(),
+                child: Container(
+                  width: double.infinity,
+                  height: 45,
+                  decoration: BoxDecoration(
+                    color: Colors.deepPurple,
+                    borderRadius: BorderRadius.all(
+                      Radius.circular(30),
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Logout',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  getUserDetails() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    var response = await get(
+        Uri.parse(
+          "${AppConfig.baseUrl}/profile-detail",
+        ),
+        headers: {"Authorization": prefs.getString("TOKEN")});
+    print(response.statusCode);
+    if (response.statusCode == 200) {
+      // loader true
+      var decoded = jsonDecode(response.body);
+      print(decoded);
+      setState(() {
+        _name = decoded["data"]["name"];
+        _email = decoded["data"]["email"];
+        _urlImage =
+            decoded["data"]["profile"] ?? "https://i.imgur.com/pXNW6nZ.jpg";
+      });
+    }
+  }
+
+  void logOut() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.clear();
+    Fluttertoast.showToast(
+      msg: "Logout Successfully",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.CENTER,
+      timeInSecForIosWeb: 1,
+    );
+    Navigator.push(context, MaterialPageRoute(builder: (_) => LoginPage()));
   }
 }

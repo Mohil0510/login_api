@@ -28,6 +28,7 @@ dependencies:
   shared_preferences: ^2.0.0
   device_info:
   fluttertoast:
+  image_picker:
 
 dev_dependencies:
   flutter_test:
