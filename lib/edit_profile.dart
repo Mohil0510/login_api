@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart';
@@ -9,6 +10,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'config.dart';
 import 'login_page.dart';
+import 'package:path/path.dart';
+import 'package:dio/dio.dart' as d;
+import 'package:path/path.dart';
 
 class EditProfile extends StatefulWidget {
   @override
@@ -21,6 +25,8 @@ class _EditProfileState extends State<EditProfile> {
   String _urlImage = "https://i.imgur.com/pXNW6nZ.jpg";
   TextEditingController _nameController = TextEditingController();
   TextEditingController _emailController = TextEditingController();
+
+  var multipartImage;
 
   @override
   void initState() {
@@ -75,7 +81,7 @@ class _EditProfileState extends State<EditProfile> {
                         child: Align(
                           alignment: Alignment.bottomRight,
                           child: GestureDetector(
-                            onTap: () => getImage(),
+                            onTap: () => getImageFunc(),
                             child: Container(
                               height: 35,
                               width: 35,
@@ -191,7 +197,7 @@ class _EditProfileState extends State<EditProfile> {
                   ),
                   child: GestureDetector(
                     onTap: () {
-                      deleteUser();
+                      deleteUser(context);
                     },
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 15),
@@ -252,12 +258,15 @@ class _EditProfileState extends State<EditProfile> {
     );
   }
 
-  Future getImage() async {
+  Future getImageFunc() async {
+    print("inside");
     PickedFile pickedFile = await picker.getImage(source: ImageSource.camera);
 
     setState(() {
       if (pickedFile != null) {
         _image = File(pickedFile.path);
+        multipartImage = d.MultipartFile.fromFileSync('${_image?.path}',
+            filename: '${basename(_image.path)}');
       } else {
         print('No image selected.');
       }
@@ -287,6 +296,23 @@ class _EditProfileState extends State<EditProfile> {
 
   updateUserDetails() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    var dio = d.Dio();
+
+    var formData = d.FormData.fromMap({
+      "name": "${_nameController.text}",
+      "email": "${_emailController.text}",
+      "_method": "PUT",
+      'profile': multipartImage,
+    });
+    var response = await dio.post(
+      '${AppConfig.baseUrl}/profile-update',
+      data: formData,
+      options: Options(
+        headers: {"Authorization": prefs.getString("TOKEN")},
+      ),
+    );
+    print(response.statusCode);
+    print(response.data);
     // var response = await post(
     //     Uri.parse(
     //       "${AppConfig.baseUrl}/profile-update",
@@ -313,20 +339,9 @@ class _EditProfileState extends State<EditProfile> {
     //     timeInSecForIosWeb: 1,
     //   );
     // }
-
-    var uri = Uri.parse('${AppConfig.baseUrl}/profile-update');
-    var request = MultipartRequest('POST', uri)
-      ..fields['name'] = "${_nameController.text}"
-      ..fields['email'] = "${_emailController.text}"
-      ..files.add(await MultipartFile.fromPath(
-        'picture',
-        '${_image?.path}',
-      ));
-    var res = await request.send();
-    print(res.statusCode);
   }
 
-  deleteUser() async {
+  deleteUser(context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     var response = await delete(
         Uri.parse(

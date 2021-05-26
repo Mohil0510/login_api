@@ -28,7 +28,10 @@ dependencies:
   shared_preferences: ^2.0.0
   device_info:
   fluttertoast:
-  image_picker:
+  image_picker: 0.7.5
+  dio: ^4.0.0
+  path:
+
 
 dev_dependencies:
   flutter_test:
